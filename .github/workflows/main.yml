@@ -1,0 +1,50 @@
+name: go releaser test
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Create .goreleaser.yml
+        run: |
+          cat <<-EOF > .goreleaser.yml
+          builds:
+            - id: "usql"
+              binary: "usql"
+              goos:
+                - linux
+              goarch:
+                - amd64
+              tags:
+                - no_postgres
+                - no_oracle
+                - no_sqlserver
+                - no_sqlite3
+          release:
+            github:
+              owner: jairuigou
+              name: go-action-test
+      - name: Checkout
+        uses: actions/checkout@v3
+        with:
+          repository: xo/usql
+          path: usql
+      - uses: actions/setup-go@v4
+        with:
+          go-version: stable
+      - name: Go Releaser
+        uses: goreleaser/goreleaser-action@v2
+        with:
+          workdir: usql
+          version: latest
+          args: release --config ../.goreleaser.yml --rm-dist
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
